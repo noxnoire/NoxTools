@@ -1,0 +1,8 @@
+{
+  "Local": [
+    "unofficial.json"
+  ],
+  "Remote": [
+    "https://raw.githubusercontent.com/4RTools/4RTools/main/supported_servers.json"
+  ]
+}

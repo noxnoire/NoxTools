@@ -1,0 +1,14 @@
+[
+  {
+    "name": "MiracleRO",
+    "description": "Miracle Ragnarok Online",
+    "hpAddress": "0x1017F38",
+    "nameAddress": "0x101A6E0"
+  },
+  {
+    "name": "seal",
+    "description": "Seal Ro",
+    "hpAddress": "0x1005F20",
+    "nameAddress": "0x10086C0"
+  }
+]
