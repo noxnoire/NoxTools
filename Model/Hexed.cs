@@ -1,11 +1,55 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace _4RTools.Model
 {
+    public class JsObject
+    {
+        public string execName
+        {
+            get; set;
+        }
+
+        public string ServerDesc
+        {
+            get; set;
+        }
+
+        public int currentNameAddress
+        {
+            get; set;
+        }
+
+        public int currentHPBaseAddress
+        {
+            get; set;
+        }
+
+        public int statusBufferAddress
+        {
+            get; set;
+        }
+
+
+
+
+        private JsObject(string execName, string serverdesc, int currentHPBaseAddress, int currentNameAddress)
+        {
+            this.currentNameAddress = currentNameAddress;
+            this.ServerDesc = serverdesc;
+            this.currentHPBaseAddress = currentHPBaseAddress;
+            this.execName = execName;
+            this.statusBufferAddress = currentHPBaseAddress + 0x474;
+        }
+    }
     public sealed class ClientSingleton
     {
         private static Client client;
@@ -45,6 +89,7 @@ namespace _4RTools.Model
             this.statusBufferAddress = currentHPBaseAddress + 0x474;
         }
 
+
         public Client(string processName)
         {
             PMR = new Utils.ProcessMemoryReader();
@@ -68,16 +113,16 @@ namespace _4RTools.Model
                         this.currentHPBaseAddress = c.currentHPBaseAddress;
                         this.currentNameAddress = c.currentNameAddress;
                         this.statusBufferAddress = c.statusBufferAddress;
-                    }catch
+                    } catch
                     {
                         MessageBox.Show("This client is not supported. Only Spammers and macro will works.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         this.currentHPBaseAddress = 0;
                         this.currentNameAddress = 0;
                         this.statusBufferAddress = 0;
                     }
-                   
+
                     //Do not block spammer for non supported Versions
-                       
+
                 }
             }
         }
@@ -86,14 +131,14 @@ namespace _4RTools.Model
         {
             byte[] bytes = PMR.ReadProcessMemory((IntPtr)address, 40u, out _num);
             List<byte> buffer = new List<byte>(); //Need a list with dynamic size 
-            for (int i =0;i < bytes.Length;i++)
+            for (int i = 0; i < bytes.Length; i++)
             {
                 if (bytes[i] == 0) break; //Check Nullability based ON ASCII Table
 
                 buffer.Add(bytes[i]); //Add only bytes needed
             }
 
-           return Encoding.Default.GetString(buffer.ToArray());
+            return Encoding.Default.GetString(buffer.ToArray());
 
         }
 
@@ -163,44 +208,122 @@ namespace _4RTools.Model
 
         public Client GetClientByProcess(string processName)
         {
-       
-            foreach(Client c in GetAll())
+
+            foreach (Client c in GetAll())
             {
                 if (c.execName == processName)
                 {
+
                     uint hpBaseValue = ReadMemory(c.currentHPBaseAddress);
+                    uint hpMaxValue = ReadMemory(c.currentHPBaseAddress + 4);
+                    uint spBaseValue = ReadMemory(c.currentHPBaseAddress + 8);
+                    uint spMaxValue = ReadMemory(c.currentHPBaseAddress + 12);
+                    string namae = ReadCharacterName();
+                    MessageBox.Show("HP:" + hpBaseValue + "/" + hpMaxValue + ".- SP:" + spBaseValue + "/" + spMaxValue + "\n"+"character name:"+ namae, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     if (hpBaseValue > 0 && hpBaseValue < MAX_POSSIBLE_HP) return c;
                 }
             }
             return null;
         }
-
-
-        private static List<Client> GetAll()
+        private static List<string> GetSources(bool remote)//true remote , false local
         {
-            List<Client> clients = new List<Client>();
-
-            clients.Add(new Client("rtales.bin", 0x00E8E434, 0x00E90C00));
-            clients.Add(new Client("Jogar", 0x00E8E434, 0x00E90C00));
-            clients.Add(new Client("RagnaRotico",0x00E4CAF4, 0x00E4D768));
-            clients.Add(new Client("BattleOfSEARO",0x00E4CAF4, 0x00E4D768));
-            clients.Add(new Client("EasyRO",0x010DCE10, 0x010DF5D8));
-            clients.Add(new Client("Jogar",0x0101A700, 0x0101CEB0)); //Portal Kafra
-            clients.Add(new Client("ragna4th",0x011D1A04, 0x011D43E8));
-            clients.Add(new Client("ROZero",0x00F4942C, 0x00F4BD70));
-            clients.Add(new Client("MiracleRO", 0x00E4CAF4, 0x00E4D768));
-            clients.Add(new Client("PrimeRO",0x011D0A14, 0x011D33F8));
-            clients.Add(new Client("NR_RO_4TH",0x011D0A14, 0x011C9684));
-            clients.Add(new Client("Ragnarok", 0x011D0A14, 0x011D33F8)); //RagnaHistory
-            clients.Add(new Client("BlueRO",0x011D1A04, 0x011D43E8));
-            clients.Add(new Client("StreetRO 2.0",0x010DCE10, 0x010D5DA8));
-            clients.Add(new Client("Gladius", 0x010DCE10, 0x010DF5D8));
-            clients.Add(new Client("AllureWar", 0x01144144, 0x01146A18));
-            clients.Add(new Client("AngelingRO", 0x010DCE10, 0x010DF5D8));
-            clients.Add(new Client("Runa Ro", 0x00E73D3C, 0x00E749D8));
-
-            return clients;
+            List<string> sources = new List<string>();
+            string jsonFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+            string jsonstr = System.IO.File.ReadAllText(jsonFilePath);
+            if (remote)
+            {
+                JObject obj = JObject.Parse(jsonstr);
+                //MessageBox.Show("remote first:" + obj["Remote"].First.Value<string>(), "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                sources.AddRange(obj["Remote"].Values<string>());
+            } else
+            {
+                JObject obj = JObject.Parse(jsonstr);
+                //MessageBox.Show("local first:" + obj["Local"].First.Value<string>(), "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                sources.AddRange(obj["Local"].Values<string>());
+            }
+            return sources;
         }
 
-    }
-}
+        private static List<Client> GetLocal()
+        {
+            List<Client> list = new List<Client>();
+            foreach (string source in GetSources(false))
+            {
+                string jsonFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, source);
+                string jsonstr = System.IO.File.ReadAllText(jsonFilePath);
+                var jarr = JArray.Parse(jsonstr);
+                if (jarr.Count == 0)
+                {
+                    MessageBox.Show("local server list empty , missing or failed to read", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                foreach (JToken obj2 in jarr)
+                {
+                    list.Add(new Client(obj2.Value<string>(key: "name"), Convert.ToInt32(obj2.Value<String>(key: "hpAddress"), 16), Convert.ToInt32(obj2.Value<String>(key: "nameAddress"), 16)));
+                }
+            }
+            //MessageBox.Show("found:" + list.Count.ToString() + "Local supported Servers.-", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return list;
+        }
+        private static List<Client> GetRemote()
+        {
+            List<Client> list = new List<Client>();
+            foreach (string source in GetSources(true))
+            {
+
+                string jsonurl = System.IO.Path.Combine(source);
+                string json = "";
+                try
+                {
+                    Uri myUri = new Uri(source);
+                    using (WebClient web = new WebClient())
+                    {
+                        json = web.DownloadString(myUri);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    //MessageBox.Show(ex.Message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                }
+
+                var jarr = JArray.Parse(json);
+                if (jarr.Count == 0)
+                {
+                    //MessageBox.Show("local server list empty , missing or failed to read", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                foreach (JToken obj2 in jarr)
+                {
+                    list.Add(new Client(obj2.Value<string>(key: "name"), Convert.ToInt32(obj2.Value<String>(key: "hpAddress"), 16), Convert.ToInt32(obj2.Value<String>(key: "nameAddress"), 16)));
+                }
+            }
+            MessageBox.Show("found:"+list.Count.ToString() + "Remote supported Servers.-", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return list;
+        }
+         private static List<Client> GetAll() {
+                List<Client> client = new List<Client>();
+                try
+                {
+                    client.AddRange(GetLocal());
+                }
+                catch
+                {
+                    //MessageBox.Show("local client list errored", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                try
+                {
+                    client.AddRange(GetRemote());
+                }
+                catch
+                {
+                    //MessageBox.Show("remote client list errored", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                if (client.Count == 0)
+                {
+                    MessageBox.Show("server list empty", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return client;
+            }
+
+        }
+    } 
+
