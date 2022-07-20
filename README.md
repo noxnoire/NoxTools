@@ -1,3 +1,15 @@
+#NoxTools extending for my own purposes 4RTools , and contributing in my free time
+
+Direct download link to last version: https://github.com/noxnoire/NoxTools/releases/latest/download/Release.7z
+
+#NoxTools extendiendo para mis proppositos 4Rtools, y contribuyendo cuando pueda
+
+Descarga Directa a la ultima version: https://github.com/noxnoire/NoxTools/releases/latest/download/Release.7z
+
+
+
+
+
 <p align="center">
   <img src="/assets/images/combo-tools.png">
 </p>
