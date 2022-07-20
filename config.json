@@ -3,6 +3,7 @@
     "unofficial.json"
   ],
   "Remote": [
-    "https://raw.githubusercontent.com/4RTools/4RTools/main/supported_servers.json"
+    "https://raw.githubusercontent.com/4RTools/4RTools/main/supported_servers.json",
+    "https://raw.githubusercontent.com/noxnoire/NoxTools/v1.7.5_custom_servers/unofficial.json"
   ]
 }
