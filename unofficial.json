@@ -10,5 +10,10 @@
     "description": "Seal Ro",
     "hpAddress": "0x1005F20",
     "nameAddress": "0x10086C0"
+  },
+  {"name": "IkoRO",
+  "description": "Server Description",
+  "hpAddresses": "0x12699456",
+  "nameAddress": "0x12709616"
   }
 ]
